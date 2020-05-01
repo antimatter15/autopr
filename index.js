@@ -11,12 +11,7 @@ async function main() {
 
     if (data.trim() !== target_branch) {
         let branch_name = await getBranchName()
-        data = await shell('git', [
-            'rev-list',
-            '--count',
-            '"^HEAD"',
-            '"^origin/' + branch_name + '"',
-        ])
+        data = await exec('git', ['rev-list', '--count', 'HEAD', '"^origin/' + branch_name + '"'])
         if (parseInt(data.trim()) != 0) throw 'ERROR: Unpushed changes in branch'
         await openPR(target_branch)
         return
