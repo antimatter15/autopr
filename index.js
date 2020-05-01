@@ -4,32 +4,6 @@ const { spawn } = require('child_process')
 const readline = require('readline')
 const open = require('open')
 
-function normalizeRepoUrl(url) {
-    var stripped = url
-        .replace('git://', '')
-        .replace('git@', '')
-        .replace('https://', '')
-        .replace('ssh://', '')
-        .replace(':', '/')
-        .replace(/\.git$/, '')
-    return 'http://' + stripped
-}
-
-async function openPR(target) {
-    let data
-    data = await shell('git', ['rev-parse', '--abbrev-ref HEAD'])
-    let branch_name = data.trim()
-    data = await shell('git', ['remote', '-v'])
-    let remotes = data
-        .trim()
-        .split('\n')
-        .filter(k => k.startsWith('origin'))
-    let repo_url = normalizeRepoUrl(remotes[0].split(/\s/)[1])
-    let pr_url = repo_url + '/pull/new/' + target + '...' + branch_name
-    console.log('> Opening ' + pr_url)
-    await open(pr_url)
-}
-
 async function main() {
     const target_branch = 'master'
     let data
@@ -49,15 +23,58 @@ async function main() {
 
     let args = process.argv.slice(2)
     let branch_name = args[0] || ''
-    while (!/^[a-z\-]+$/.test(branch_name)) {
+
+    while (true) {
+        if (
+            !/^(?!\/|.*([/.]\.|\/\/|@\{|\\\\))[^\040\177 ~^:?*\[]+(?<!\.lock|[/.])$/.test(
+                branch_name
+            )
+        ) {
+            if (branch_name) console.log('Invalid branch name')
+        } else {
+            let data
+            try {
+                data = (await shell('git', ['show-ref', 'refs/heads/' + branch_name])).trim()
+            } catch (e) {}
+            if (data) {
+                console.log('Branch already exists')
+            } else {
+                break
+            }
+        }
         branch_name = await prompt('Choose a branch name: ')
     }
 
     await exec('git', ['branch', branch_name])
-    await exec('git', ['reset', '--keep origin/' + target_branch])
+    await exec('git', ['reset', '--keep', 'origin/' + target_branch])
     await exec('git', ['checkout', branch_name])
-    await exec('git', ['push', '--set-upstream origin ' + branch_name])
+    await exec('git', ['push', '--set-upstream', 'origin ' + branch_name])
     await openPR(target_branch)
+}
+
+async function openPR(target) {
+    let data
+    data = await shell('git', ['rev-parse', '--abbrev-ref HEAD'])
+    let branch_name = data.trim()
+    data = await shell('git', ['remote', '-v'])
+    let remotes = data
+        .trim()
+        .split('\n')
+        .filter(k => k.includes('github'))
+    if (!remotes[0]) throw 'ERROR: no Github remotes found'
+    let repo_url =
+        'http://' +
+        remotes[0]
+            .split(/\s/)[1]
+            .replace('git://', '')
+            .replace('git@', '')
+            .replace('https://', '')
+            .replace('ssh://', '')
+            .replace(':', '/')
+            .replace(/\.git$/, '')
+    let pr_url = repo_url + '/pull/new/' + target + '...' + branch_name
+    console.log('> Opening ' + pr_url)
+    await open(pr_url)
 }
 
 function prompt(question) {
