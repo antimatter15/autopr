@@ -46,13 +46,14 @@ async function main() {
     }
 
     // Create and checkout new branch
-    await exec('git', ['checkout', '-b', branch_name])
+    await shell('git', ['checkout', '-b', branch_name])
     // Rest master to the previous state
-    await exec('git', [
+    await shell('git', [
         'update-ref',
         'refs/heads/' + target_branch,
         'refs/remotes/origin/' + target_branch,
     ])
+    console.log('Switched to branch ' + branch_name)
     await exec('git', ['push', '--set-upstream', 'origin ' + branch_name])
     await openPR(target_branch)
 }
@@ -81,7 +82,7 @@ async function openPR(target) {
             .replace(':', '/')
             .replace(/\.git$/, '')
     let pr_url = repo_url + '/pull/new/' + target + '...' + branch_name
-    console.log('> Opening ' + pr_url)
+    console.log('Opening ' + pr_url)
     await open(pr_url)
 }
 
