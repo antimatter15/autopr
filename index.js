@@ -5,16 +5,9 @@ const readline = require('readline')
 const open = require('open')
 
 async function main() {
-    const target_branch = 'master'
+    const target_branch = await getBranchName()
     let data
     data = await shell('git', ['rev-parse', '--abbrev-ref HEAD'])
-
-    if (data.trim() !== target_branch) {
-        let branch_name = await getBranchName()
-        await exec('git', ['push', '--set-upstream', 'origin ' + branch_name])
-        await openPR(target_branch)
-        return
-    }
 
     data = await shell('git', ['rev-list', '--count', target_branch, `"^origin/${target_branch}"`])
     if (parseInt(data.trim()) === 0) {
@@ -114,10 +107,12 @@ function shell(cmd, args, log = false) {
         proc.stdout.setEncoding('utf8')
         proc.stdout.on('data', chunk => {
             text += chunk
+            if (log) process.stdout.write(chunk)
         })
         proc.stderr.setEncoding('utf8')
         proc.stderr.on('data', chunk => {
             text += chunk
+            if (log) process.stderr.write(chunk)
         })
         proc.on('close', code => {
             if (code !== 0) {
