@@ -1,7 +1,11 @@
-# autopr
+# apr
 
-A simple utility that makes it easy to do a pull-request workflow.
+Sometimes you just aren't sure what you want to call a branch until after you've done started doing
+stuff. With `apr` you can defer responsibility for longer!
 
-Just develop on top of `master`- committing as usual but without pushing. Run `pr` to automatically
-move your unpushed changes to a new branch, push to an eponymous remote, and open your browser to
-the pull request creation wizard.
+Just commit directly on top of `master` without pushing your changes.
+
+When you're ready to start a pull request, just run the `apr` command and it'll take all your
+unpushed changes and move them onto a new branch.
+
+It'll push the new branch, and then open up your browser to the page to create a new pull request.
