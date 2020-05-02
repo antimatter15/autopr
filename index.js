@@ -14,7 +14,8 @@ async function main() {
         `"^origin/${starting_branch}"`
     )
     if (parseInt(data.trim()) === 0) {
-        throw 'ERROR: No commits to turn into pull request.\nCommit your changes before running this command.'
+        throw 'ERROR: No commits to turn into pull request.\n' +
+            'Commit your changes before running this command.'
     }
 
     let branch_name = await prompt_branch_name()
@@ -51,9 +52,9 @@ async function main() {
 }
 
 async function prompt_branch_name() {
-    let args = process.argv.slice(2)
+    let initial_guess = process.argv.slice(2)[0] || ''
 
-    return await validated_prompt(args[0] || '', 'Choose a branch name: ', async name => {
+    return await validated_prompt(initial_guess, 'Choose a branch name: ', async name => {
         if (!name.trim()) return 'Branch can not be empty'
         if (!/^(?!\/|.*([/.]\.|\/\/|@\{|\\\\))[^\040\177 ~^:?*\[]+(?<!\.lock|[/.])$/.test(name))
             return 'Invalid branch name'
@@ -68,15 +69,14 @@ async function get_branch_name() {
     return data.trim()
 }
 
-async function launch_pr_wizard(target) {
-    let branch_name = await get_branch_name()
-    data = await shell('git', 'remote', '-v')
+async function get_repo_url() {
+    let data = await shell('git', 'remote', '-v')
     let remotes = data
         .trim()
         .split('\n')
         .filter(k => k.includes('github'))
     if (!remotes[0]) throw 'ERROR: no Github remotes found'
-    let repo_url =
+    return (
         'http://' +
         remotes[0]
             .split(/\s/)[1]
@@ -86,15 +86,22 @@ async function launch_pr_wizard(target) {
             .replace('ssh://', '')
             .replace(':', '/')
             .replace(/\.git$/, '')
+    )
+}
+
+async function launch_pr_wizard(target) {
+    let branch_name = await get_branch_name()
+    let repo_url = await get_repo_url()
+
     let pr_url = repo_url + '/pull/new/' + target + '...' + branch_name
     console.log('Opening ' + pr_url)
     await open(pr_url)
 }
 
-async function validated_prompt(initialGuess, question, validate) {
-    if (initialGuess) {
-        let warning = await validate(initialGuess)
-        if (!warning) return initialGuess
+async function validated_prompt(initial, question, validate) {
+    if (initial) {
+        let warning = await validate(initial)
+        if (!warning) return initial
         console.log(warning)
     }
     while (true) {

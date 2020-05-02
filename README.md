@@ -15,11 +15,11 @@ And for those situations where you poke around a bit and realize there's somethi
 should be doing instead— you won't find your `git branch` littered with the carcasses of intentions
 that fell by the wayside.
 
-Will `autopr` solve world hunger? Nah. But at least it probably won't cause it.
+Will `autopr` solve world hunger? Nah. But at least it probably won't cause it. _probably_.
 
 ## how to use it
 
-1. Commit your changes on top of `master` with wreckless abandon
+1. Commit your changes on top of `master` with reckless abandon
 
 2. Instead of pushing, run `apr my-new-branch-name` and it'll transfer all your your new
    `my-new-branch-name` branch, while resetting `master` to its old state. It'll then automatically
