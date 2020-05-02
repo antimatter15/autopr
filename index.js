@@ -45,9 +45,14 @@ async function main() {
         branch_name = await prompt('Choose a branch name: ')
     }
 
-    await exec('git', ['branch', branch_name])
-    await exec('git', ['reset', '--keep', 'origin/' + target_branch])
-    await exec('git', ['checkout', branch_name])
+    // Create and checkout new branch
+    await exec('git', ['checkout', '-b', branch_name])
+    // Rest master to the previous state
+    await exec('git', [
+        'update-ref',
+        'refs/heads/' + target_branch,
+        'refs/remotes/origin/' + target_branch,
+    ])
     await exec('git', ['push', '--set-upstream', 'origin ' + branch_name])
     await openPR(target_branch)
 }
