@@ -1,10 +1,11 @@
 {
-    "name": "apr",
-    "version": "1.0.0",
+    "name": "autopr",
+    "version": "1.0.2",
     "main": "index.js",
     "license": "MIT",
     "bin": {
-        "apr": "./index.js"
+        "apr": "./index.js",
+        "autopr": "./index.js"
     },
     "dependencies": {
         "open": "^7.0.3"
