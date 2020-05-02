@@ -6,10 +6,13 @@ const open = require('open')
 
 async function main() {
     const target_branch = await getBranchName()
-    let data
-    data = await shell('git', ['rev-parse', '--abbrev-ref HEAD'])
-
-    data = await shell('git', ['rev-list', '--count', target_branch, `"^origin/${target_branch}"`])
+    let data = await shell(
+        'git',
+        'rev-list',
+        '--count',
+        target_branch,
+        `"^origin/${target_branch}"`
+    )
     if (parseInt(data.trim()) === 0) {
         throw 'ERROR: No commits to turn into pull request.\nCommit your changes before running this command.'
     }
@@ -27,7 +30,7 @@ async function main() {
         } else {
             let data
             try {
-                data = (await shell('git', ['show-ref', 'refs/heads/' + branch_name])).trim()
+                data = (await shell('git', 'show-ref', 'refs/heads/' + branch_name)).trim()
             } catch (e) {}
             if (data) {
                 console.log('Branch already exists')
@@ -39,28 +42,25 @@ async function main() {
     }
 
     // Create and checkout new branch
-    await shell('git', ['checkout', '-b', branch_name])
+    await shell('git', 'checkout', '-b', branch_name)
     // Rest master to the previous state
-    await shell('git', [
+    await shell(
+        'git',
         'update-ref',
         'refs/heads/' + target_branch,
-        'refs/remotes/origin/' + target_branch,
-    ])
+        'refs/remotes/origin/' + target_branch
+    )
 
     try {
-        await exec('git', ['push', '--set-upstream', 'origin ' + branch_name])
+        await exec('git', 'push', '--set-upstream', 'origin ' + branch_name)
     } catch (err) {
         if (!err.includes('SIGINT')) throw err
 
         console.log('Push interrupted: Switching back to ' + target_branch)
 
-        await shell('git', [
-            'update-ref',
-            'refs/heads/' + target_branch,
-            'refs/heads/' + branch_name,
-        ])
-        await shell('git', ['checkout', target_branch])
-        await shell('git', ['branch', '-d', branch_name])
+        await shell('git', 'update-ref', 'refs/heads/' + target_branch, 'refs/heads/' + branch_name)
+        await shell('git', 'checkout', target_branch)
+        await shell('git', 'branch', '-d', branch_name)
 
         return
     }
@@ -70,12 +70,13 @@ async function main() {
 
 async function getBranchName() {
     let data
-    data = await shell('git', ['rev-parse', '--abbrev-ref HEAD'])
+    data = await shell('git', 'rev-parse', '--abbrev-ref HEAD')
     return data.trim()
 }
+
 async function openPR(target) {
     let branch_name = await getBranchName()
-    data = await shell('git', ['remote', '-v'])
+    data = await shell('git', 'remote', '-v')
     let remotes = data
         .trim()
         .split('\n')
@@ -102,9 +103,6 @@ function prompt(question) {
             input: process.stdin,
             output: process.stdout,
         })
-        rl.on('close', function() {
-            // process.exit(0);
-        })
         rl.question(question, result => {
             resolve(result)
             rl.close()
@@ -112,11 +110,15 @@ function prompt(question) {
     })
 }
 
-function exec(cmd, args) {
-    return shell(cmd, args, true)
+function exec(cmd, ...args) {
+    return _shell(cmd, args, true)
 }
 
-function shell(cmd, args, log = false) {
+function shell(cmd, ...args) {
+    return _shell(cmd, args, false)
+}
+
+function _shell(cmd, args, log) {
     return new Promise((resolve, reject) => {
         if (log) console.log(`> ${cmd} ${args.join(' ')}`)
         const proc = spawn(cmd, args, { shell: true })
