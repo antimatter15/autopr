@@ -27,7 +27,21 @@ littered with the carcasses of unfulfilled intentions.
 ## how to install it
 
 ```
-    npm install -g autopr
+npm install -g autopr
 ```
 
-This will install the `autopr` command and its more suave cousin `apr`
+This will install the `autopr` command and its more suave and stylish _nom de guerre_ `apr`
+
+## atomicity and stuff
+
+The author of this library has taken great pains to make the library essentially "atomic". That is,
+if you press `Ctrl-C` while the command is running and interrupt it- it'll undo what it has done so
+you don't wind up in some silly intermediate state.
+
+Thus if you make a mistake and didn't really mean to move your committed changes into a new branch
+and push it to the remote, you have a few precious seconds to abort, and it'll be as if you hadn't
+run `apr` at all.
+
+## what else
+
+I donno. 
