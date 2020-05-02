@@ -5,7 +5,7 @@ const readline = require('readline')
 const open = require('open')
 
 async function main() {
-    const starting_branch = await getBranchName()
+    const starting_branch = await get_branch_name()
     let data = await shell(
         'git',
         'rev-list',
@@ -17,7 +17,7 @@ async function main() {
         throw 'ERROR: No commits to turn into pull request.\nCommit your changes before running this command.'
     }
 
-    let branch_name = await promptBranchName()
+    let branch_name = await prompt_branch_name()
     // Create and checkout new branch
     await shell('git', 'checkout', '-b', branch_name)
     // Reset master to the previous state
@@ -47,10 +47,10 @@ async function main() {
         return
     }
 
-    await openPR(starting_branch)
+    await launch_pr_wizard(starting_branch)
 }
 
-async function promptBranchName() {
+async function prompt_branch_name() {
     let args = process.argv.slice(2)
 
     return await validated_prompt(args[0] || '', 'Choose a branch name: ', async name => {
@@ -62,14 +62,14 @@ async function promptBranchName() {
     })
 }
 
-async function getBranchName() {
+async function get_branch_name() {
     let data
     data = await shell('git', 'rev-parse', '--abbrev-ref HEAD')
     return data.trim()
 }
 
-async function openPR(target) {
-    let branch_name = await getBranchName()
+async function launch_pr_wizard(target) {
+    let branch_name = await get_branch_name()
     data = await shell('git', 'remote', '-v')
     let remotes = data
         .trim()
@@ -141,12 +141,12 @@ function _shell(cmd, args, log) {
             text += chunk
             if (log) process.stderr.write(chunk)
         })
-        const SIGINT_HANDLER = () => {
-            proc.kill()
+        const sigint_handler = () => {
+            proc.kill() // pay it forward
         }
-        process.on('SIGINT', SIGINT_HANDLER)
+        process.on('SIGINT', sigint_handler)
         proc.on('close', (code, signal) => {
-            process.off('SIGINT', SIGINT_HANDLER)
+            process.off('SIGINT', sigint_handler)
             if (code !== 0) {
                 reject(`Command ${cmd} failed with return code ${code} and signal ${signal}`)
             } else {
