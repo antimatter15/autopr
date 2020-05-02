@@ -1,17 +1,21 @@
 # autopr
 
 Do you ever feel crippled by the anxiety of having to decide the name of a branch to create in Git,
-before you're sure what you're doing next.
+before you're sure what you're doing next?
 
-`autopr` is a new fantastic tool that lets you _prolong_ your indecision! Now you don't have to
-decide what to name a branch until the _last-possible_ moment— mere seconds before you poke your
-coworkers to review your pull request!
+`autopr` is a new tool that lets you procrastinate on this most particular of modern plights!
 
-Now you'll have the idle time while coding to mull over a better branch name with more brevity or
-wit.
+Now you don't have to decide what to name a branch until the _last-possible_ moment— mere seconds
+before you poke your coworkers to review your pull request!
 
-Or if you end up deciding to do something else altogether— you won't find your `git branch` to be
-littered with the carcasses of unfulfilled intentions.
+With `autopr` you'll have the idle time while coding to mull over a better branch name with more
+brevity or wit. Maybe with the additional time, you'll even earn a fleeting grin or muted groan!
+
+And for those situations where you poke around a bit and realize there's something else that you
+should be doing instead— you won't find your `git branch` littered with the carcasses of intentions
+that fell by the wayside.
+
+Will `autopr` solve world hunger? Nah. But at least it probably won't cause it.
 
 ## how to use it
 
@@ -44,4 +48,4 @@ run `apr` at all.
 
 ## what else
 
-I donno. 
+I donno.

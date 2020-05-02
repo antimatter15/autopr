@@ -5,50 +5,27 @@ const readline = require('readline')
 const open = require('open')
 
 async function main() {
-    const target_branch = await getBranchName()
+    const starting_branch = await getBranchName()
     let data = await shell(
         'git',
         'rev-list',
         '--count',
-        target_branch,
-        `"^origin/${target_branch}"`
+        starting_branch,
+        `"^origin/${starting_branch}"`
     )
     if (parseInt(data.trim()) === 0) {
         throw 'ERROR: No commits to turn into pull request.\nCommit your changes before running this command.'
     }
 
-    let args = process.argv.slice(2)
-    let branch_name = args[0] || ''
-
-    while (true) {
-        if (
-            !/^(?!\/|.*([/.]\.|\/\/|@\{|\\\\))[^\040\177 ~^:?*\[]+(?<!\.lock|[/.])$/.test(
-                branch_name
-            )
-        ) {
-            if (branch_name) console.log('Invalid branch name')
-        } else {
-            let data
-            try {
-                data = (await shell('git', 'show-ref', 'refs/heads/' + branch_name)).trim()
-            } catch (e) {}
-            if (data) {
-                console.log('Branch already exists')
-            } else {
-                break
-            }
-        }
-        branch_name = await prompt('Choose a branch name: ')
-    }
-
+    let branch_name = await promptBranchName()
     // Create and checkout new branch
     await shell('git', 'checkout', '-b', branch_name)
-    // Rest master to the previous state
+    // Reset master to the previous state
     await shell(
         'git',
         'update-ref',
-        'refs/heads/' + target_branch,
-        'refs/remotes/origin/' + target_branch
+        'refs/heads/' + starting_branch,
+        'refs/remotes/origin/' + starting_branch
     )
 
     try {
@@ -56,16 +33,33 @@ async function main() {
     } catch (err) {
         if (!err.includes('SIGINT')) throw err
 
-        console.log('Push interrupted: Switching back to ' + target_branch)
+        console.log('Push interrupted: Switching back to ' + starting_branch)
 
-        await shell('git', 'update-ref', 'refs/heads/' + target_branch, 'refs/heads/' + branch_name)
-        await shell('git', 'checkout', target_branch)
+        await shell(
+            'git',
+            'update-ref',
+            'refs/heads/' + starting_branch,
+            'refs/heads/' + branch_name
+        )
+        await shell('git', 'checkout', starting_branch)
         await shell('git', 'branch', '-d', branch_name)
 
         return
     }
 
-    await openPR(target_branch)
+    await openPR(starting_branch)
+}
+
+async function promptBranchName() {
+    let args = process.argv.slice(2)
+
+    return await validated_prompt(args[0] || '', 'Choose a branch name: ', async name => {
+        if (!name.trim()) return 'Branch can not be empty'
+        if (!/^(?!\/|.*([/.]\.|\/\/|@\{|\\\\))[^\040\177 ~^:?*\[]+(?<!\.lock|[/.])$/.test(name))
+            return 'Invalid branch name'
+        if ((await shell('git', 'show-ref', 'refs/heads/' + name).catch(k => '')).trim())
+            return 'Branch already exists'
+    })
 }
 
 async function getBranchName() {
@@ -95,6 +89,20 @@ async function openPR(target) {
     let pr_url = repo_url + '/pull/new/' + target + '...' + branch_name
     console.log('Opening ' + pr_url)
     await open(pr_url)
+}
+
+async function validated_prompt(initialGuess, question, validate) {
+    if (initialGuess) {
+        let warning = await validate(initialGuess)
+        if (!warning) return initialGuess
+        console.log(warning)
+    }
+    while (true) {
+        let result = await prompt(question)
+        let warning = await validate(result)
+        if (!warning) return result
+        console.log(warning)
+    }
 }
 
 function prompt(question) {
