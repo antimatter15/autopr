@@ -46,8 +46,25 @@ async function main() {
         'refs/heads/' + target_branch,
         'refs/remotes/origin/' + target_branch,
     ])
-    console.log('Switched to branch ' + branch_name)
-    await exec('git', ['push', '--set-upstream', 'origin ' + branch_name])
+
+    try {
+        await exec('git', ['push', '--set-upstream', 'origin ' + branch_name])
+    } catch (err) {
+        if (!err.includes('SIGINT')) throw err
+
+        console.log('Push interrupted: Switching back to ' + target_branch)
+
+        await shell('git', [
+            'update-ref',
+            'refs/heads/' + target_branch,
+            'refs/heads/' + branch_name,
+        ])
+        await shell('git', ['checkout', target_branch])
+        await shell('git', ['branch', '-d', branch_name])
+
+        return
+    }
+
     await openPR(target_branch)
 }
 
@@ -114,9 +131,14 @@ function shell(cmd, args, log = false) {
             text += chunk
             if (log) process.stderr.write(chunk)
         })
-        proc.on('close', code => {
+        const SIGINT_HANDLER = () => {
+            proc.kill()
+        }
+        process.on('SIGINT', SIGINT_HANDLER)
+        proc.on('close', (code, signal) => {
+            process.off('SIGINT', SIGINT_HANDLER)
             if (code !== 0) {
-                reject(`Command ${cmd} failed with return code ${code}: \n\n${text}`)
+                reject(`Command ${cmd} failed with return code ${code} and signal ${signal}`)
             } else {
                 resolve(text)
             }
